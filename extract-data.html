@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>提取 Flowy 数据</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        h1 { color: #667eea; }
+        .key { background: #f0f0f0; padding: 8px; margin: 5px 0; border-radius: 4px; font-family: monospace; }
+        .value { background: #fff; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto; }
+        button { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #5568d3; }
+        .success { background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; margin: 10px 0; }
+        .empty { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 提取 Flowy Todo 数据</h1>
+    <p>这个工具会读取 localStorage 中的所有 flowy 数据并显示出来。</p>
+
+    <button onclick="extractData()">📊 提取数据</button>
+    <button onclick="downloadBackup()">💾 下载备份文件</button>
+
+    <div id="result"></div>
+
+    <script>
+        const FLOWY_KEYS = [
+            'flowy-todos',
+            'flowy-meetings',
+            'flowy-memos',
+            'flowy-tags',
+            'flowy-projects',
+            'flowy-ai-reminders',
+            'flowy-section-collapsed',
+            'flowy-last-reminder-check'
+        ];
+
+        let extractedData = {};
+
+        function extractData() {
+            const result = document.getElementById('result');
+            result.innerHTML = '';
+            extractedData = {};
+
+            let found = false;
+
+            FLOWY_KEYS.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    found = true;
+                    extractedData[key] = value;
+
+                    const keyDiv = document.createElement('div');
+                    keyDiv.innerHTML = `<h3>${key}</h3>`;
+
+                    const valueDiv = document.createElement('div');
+                    valueDiv.className = 'value';
+                    try {
+                        const parsed = JSON.parse(value);
+                        valueDiv.textContent = JSON.stringify(parsed, null, 2);
+                        keyDiv.innerHTML += `<p style="color: green;">✅ 包含 ${parsed.length || 1} 条数据</p>`;
+                    } catch (e) {
+                        valueDiv.textContent = value;
+                    }
+                    keyDiv.appendChild(valueDiv);
+
+                    result.appendChild(keyDiv);
+                }
+            });
+
+            if (!found) {
+                result.innerHTML = '<div class="empty">⚠️ 没有找到任何 flowy 数据！<br><br>请确保你在正确的 Chrome 配置文件中打开这个页面（可能是 Profile 5）。</div>';
+            }
+        }
+
+        function downloadBackup() {
+            // 先提取数据
+            FLOWY_KEYS.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    extractedData[key] = value;
+                }
+            });
+
+            if (Object.keys(extractedData).length === 0) {
+                alert('❌ 没有找到数据可以备份！\n\n请先点击"提取数据"按钮查看是否有数据。');
+                return;
+            }
+
+            const backup = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                chromeProfile: 'Profile 5 (检测到)',
+                data: {}
+            };
+
+            FLOWY_KEYS.forEach(key => {
+                if (extractedData[key]) {
+                    try {
+                        backup.data[key] = JSON.parse(extractedData[key]);
+                    } catch (e) {
+                        backup.data[key] = extractedData[key];
+                    }
+                }
+            });
+
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flowy-recovered-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('✅ 备份文件已下载！\n\n文件名: flowy-recovered-YYYY-MM-DD.json\n\n现在你可以用 my-todo 的"导入"功能恢复数据了！');
+        }
+
+        // 自动提取
+        window.onload = function() {
+            extractData();
+        };
+    </script>
+</body>
+</html>

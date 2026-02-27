@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>检查 Flowy 数据</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; background: #f5f7fa; }
+        h1 { color: #667eea; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .data-count { font-size: 24px; font-weight: bold; color: #667eea; }
+        .empty { color: #999; }
+        button { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #5568d3; }
+        .sample { background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 150px; overflow: auto; }
+        .warning { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Flowy 数据检查工具</h1>
+
+    <div class="card">
+        <h2>当前浏览器配置</h2>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>检查时间:</strong> <span id="checkTime"></span></p>
+    </div>
+
+    <div id="result"></div>
+
+    <button onclick="downloadBackup()">💾 下载完整备份</button>
+    <button onclick="location.reload()">🔄 重新检查</button>
+
+    <script>
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('checkTime').textContent = new Date().toLocaleString('zh-CN');
+
+        const FLOWY_KEYS = [
+            { key: 'flowy-todos', name: '任务列表' },
+            { key: 'flowy-meetings', name: '会议记录' },
+            { key: 'flowy-memos', name: '便签' },
+            { key: 'flowy-tags', name: '标签' },
+            { key: 'flowy-projects', name: '项目' },
+            { key: 'flowy-ai-reminders', name: 'AI 提醒' },
+            { key: 'flowy-section-collapsed', name: '折叠状态' }
+        ];
+
+        function checkData() {
+            const result = document.getElementById('result');
+            result.innerHTML = '';
+
+            let totalData = 0;
+            let hasData = false;
+
+            FLOWY_KEYS.forEach(item => {
+                const value = localStorage.getItem(item.key);
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                if (value !== null) {
+                    hasData = true;
+                    try {
+                        const parsed = JSON.parse(value);
+                        const count = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
+                        totalData += count;
+
+                        let html = `<h3>${item.name} (${item.key})</h3>`;
+                        html += `<div class="data-count">✅ ${count} 条数据</div>`;
+
+                        // 显示前3条示例
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            html += '<div class="sample"><strong>示例数据:</strong><br>';
+                            parsed.slice(0, 3).forEach((item, idx) => {
+                                html += `<br>${idx + 1}. ${JSON.stringify(item).substring(0, 100)}...`;
+                            });
+                            html += '</div>';
+                        }
+
+                        card.innerHTML = html;
+                    } catch (e) {
+                        card.innerHTML = `<h3>${item.name}</h3><p class="empty">⚠️ 数据格式错误: ${e.message}</p>`;
+                    }
+                } else {
+                    card.innerHTML = `<h3>${item.name}</h3><p class="empty">❌ 无数据</p>`;
+                }
+
+                result.appendChild(card);
+            });
+
+            // 添加汇总
+            if (!hasData) {
+                const warning = document.createElement('div');
+                warning.className = 'warning';
+                warning.innerHTML = `
+                    <h3>⚠️ 没有找到任何 Flowy 数据！</h3>
+                    <p><strong>可能的原因：</strong></p>
+                    <ol>
+                        <li>你在错误的 Chrome 配置文件中（当前: yunzhi）</li>
+                        <li>数据从未保存过</li>
+                        <li>数据已被清除</li>
+                    </ol>
+                    <p><strong>建议：</strong></p>
+                    <ul>
+                        <li>检查是否有其他 Chrome 配置文件（点击右上角头像查看）</li>
+                        <li>尝试在其他配置文件中打开此页面</li>
+                    </ul>
+                `;
+                result.insertBefore(warning, result.firstChild);
+            } else {
+                const summary = document.createElement('div');
+                summary.className = 'card';
+                summary.innerHTML = `<h2>📊 数据汇总</h2><p class="data-count">共 ${totalData} 条数据</p>`;
+                result.insertBefore(summary, result.firstChild);
+            }
+        }
+
+        function downloadBackup() {
+            const backup = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                chromeUser: 'yunzhi (Profile 5)',
+                data: {}
+            };
+
+            FLOWY_KEYS.forEach(item => {
+                const value = localStorage.getItem(item.key);
+                if (value !== null) {
+                    try {
+                        backup.data[item.key] = JSON.parse(value);
+                    } catch (e) {
+                        backup.data[item.key] = value;
+                    }
+                }
+            });
+
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flowy-yunzhi-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('✅ 备份文件已下载！\n\n文件名: flowy-yunzhi-YYYY-MM-DD.json');
+        }
+
+        // 自动检查
+        checkData();
+    </script>
+</body>
+</html>
