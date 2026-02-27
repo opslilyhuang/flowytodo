@@ -286,12 +286,15 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// 明确提供首页，避免静态路由或路径问题
+// 明确提供首页和登录页，避免静态路由或路径问题
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 app.get('/index.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
 });
 
 // 静态文件（其他 js/css/图片等）
