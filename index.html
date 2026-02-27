@@ -6589,6 +6589,7 @@
         // ========== 项目管理模块 ==========
 
         // 项目数据（存储在localStorage，支持动态添加）
+        // 默认项目已移除，每个用户的项目数据独立管理
         const DEFAULT_PROJECTS = [
             {
                 id: 'ai-gantt-chart',
@@ -6651,17 +6652,9 @@
         ];
 
         function loadProjects() {
+            // 不再使用默认项目，每个用户的项目完全独立
             const saved = Array.isArray(projects) ? projects : [];
-            const savedIds = new Set(saved.map(p => p.id));
-            const merged = [...saved];
-            DEFAULT_PROJECTS.forEach(p => {
-                if (!savedIds.has(p.id)) merged.push(p);
-            });
-            if (merged.length !== saved.length) {
-                projects = merged;
-                saveDataToBackend('flowy-projects', JSON.stringify(merged));
-            }
-            return merged.length ? merged : DEFAULT_PROJECTS;
+            return saved;
         }
 
         function saveProjects(newProjects) {
