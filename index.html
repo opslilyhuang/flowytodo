@@ -3556,7 +3556,7 @@
         function checkAuth() {
             if (!authToken) {
                 // 未登录，跳转到登录页
-                window.location.href = '/login.html';
+                window.location.href = 'login.html';
                 return false;
             }
             return true;
@@ -3604,7 +3604,7 @@
             localStorage.removeItem('flowy-username');
             authToken = null;
             currentUsername = null;
-            window.location.href = '/login.html';
+            window.location.href = 'login.html';
         }
 
         // ========== 原有 API 请求封装（向后兼容）==========
