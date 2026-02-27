@@ -285,11 +285,15 @@
 
                 if (result.success) {
                     // 保存 token 和用户名
+                    console.log('登录成功，保存 token:', result.token);
                     localStorage.setItem('flowy-token', result.token);
                     localStorage.setItem('flowy-username', result.username);
+                    console.log('Token 已保存，验证:', localStorage.getItem('flowy-token'));
 
-                    // 跳转到主页
-                    window.location.href = 'index.html';
+                    // 短暂延迟确保 localStorage 写入完成
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 100);
                 } else {
                     showError('login', result.error || '登录失败');
                 }
@@ -340,9 +344,13 @@
 
                         const loginData = await loginResult.json();
                         if (loginData.success) {
+                            console.log('注册成功并登录，保存 token:', loginData.token);
                             localStorage.setItem('flowy-token', loginData.token);
                             localStorage.setItem('flowy-username', loginData.username);
-                            window.location.href = 'index.html';
+                            console.log('Token 已保存，验证:', localStorage.getItem('flowy-token'));
+                            setTimeout(() => {
+                                window.location.href = 'index.html';
+                            }, 100);
                         }
                     }, 1000);
                 } else {
