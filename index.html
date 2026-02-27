@@ -3748,6 +3748,11 @@
                     }
                 }
 
+                // 渲染标签相关UI
+                renderTags();
+                renderMemoTags();
+                updateTagFilter();
+
                 console.log('✅ 数据已从后端加载');
 
                 hideLoadingOverlay();
